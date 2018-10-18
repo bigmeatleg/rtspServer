@@ -78,4 +78,4 @@ rtsp.o: rtsp.cpp common.h mpp_comm.h \
  /usr/include/mpp/middleware/media/include/component/ClockCompPortIndex.h \
  /usr/include/mpp/middleware/media/LIBRARY/libcedarc/include/sc_interface.h \
  /usr/include/mpp/middleware/../system/include/libion/ion_memmanager.h \
- MediaStream.h TinyServer.h
+ MediaStream.h TinyServer.h httpd.h

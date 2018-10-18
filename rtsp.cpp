@@ -21,12 +21,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <pthread.h>
 
 #include "common.h"
 #include "mpp_comm.h"
 
 #include "MediaStream.h"
 #include "TinyServer.h"
+#include "httpd.h"
 
 
 /************************************************************************************************/
@@ -35,6 +37,14 @@
 //#define ENABLE_VO_CLOCK
 
 //#define AI_ENABLE
+#define HTTP_HEADER_END     "\r\n\r\n"
+#define HTTP_GET            "GET"
+#define HTTP_POST           "POST"
+#define HTTP_FONT           "Helvetica,Arial,sans-serif"
+
+#define TIMEOUT             1500
+
+static httpd g_set;
 
 /************************************************************************************************/
 /*                                    Structure Declarations                                    */
@@ -276,6 +286,29 @@ static int rtsp_start(TinyServer *rtsp)
     return 0;
 }
 
+void httpdCallBack(void *data)
+{
+	char *bodystr = (char*)data;
+	
+}
+
+void* httpd_start(void *data)
+{
+	//httpd start for control isp
+	HTTPD_CallBack _httpdcallback;
+	_httpdcallback._CALLBACK = httpdCallBack;
+   	httpd_init();
+
+	httpd_set_callback(_httpdcallback);
+	
+	g_set.port = 80;
+	g_set.base = "./";
+	
+    httpd_show_status();
+
+    httpd_loop();
+    httpd_uninit();
+}
 
 static void rtsp_stop(TinyServer *rtsp)
 {
@@ -890,6 +923,7 @@ static int components_stop(void)
 int main(int argc, char **argv)
 {
     int ret = 0;
+	pthread_t thread_httpd;
 	
     /* Setup 0. Create rtsp */
     TinyServer *rtsp;
@@ -962,8 +996,8 @@ int main(int argc, char **argv)
     /* Setup 8. Create thread, and get stream send to rtsp */
     rtsp_start(rtsp);
 
-    /* Setup 9. Do this block menu control function */
-    //MenuCtrl();
+	pthread_create(&thread_httpd, NULL, httpd_start, 0);
+	
 	holdloop();    
 
     rtsp_stop(rtsp);

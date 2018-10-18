@@ -76,6 +76,7 @@ LD_FLAG   += -lc
 LD_FLAG   += -lpthread
 LD_FLAG   += -lTinyServer
 LD_FLAG   += -llog
+LD_FLAG	  += -ldl
 #LD_FLAG   += -Wl,--allow-shlib-undefined
 
 LD_FLAG   += -lglog
