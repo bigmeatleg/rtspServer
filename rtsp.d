@@ -1,4 +1,10 @@
-rtsp.o: rtsp.cpp common.h mpp_comm.h \
+rtsp.o: rtsp.cpp /usr/include/json-c/json.h /usr/include/json-c/bits.h \
+ /usr/include/json-c/debug.h /usr/include/json-c/linkhash.h \
+ /usr/include/json-c/json_object.h /usr/include/json-c/json_inttypes.h \
+ /usr/include/json-c/json_config.h /usr/include/json-c/arraylist.h \
+ /usr/include/json-c/json_util.h /usr/include/json-c/json_tokener.h \
+ /usr/include/json-c/json_object_iterator.h \
+ /usr/include/json-c/json_c_version.h common.h mpp_comm.h \
  /usr/include/mpp/middleware/include/media/mpi_sys.h \
  /usr/include/mpp/middleware/include/utils/plat_type.h \
  /usr/include/mpp/middleware/include/media/mm_common.h \

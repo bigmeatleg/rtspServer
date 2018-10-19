@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <pthread.h>
+#include <json.h>
 
 #include "common.h"
 #include "mpp_comm.h"
@@ -286,10 +287,25 @@ static int rtsp_start(TinyServer *rtsp)
     return 0;
 }
 
-void httpdCallBack(void *data)
+void httpdCallBack(void *data_socket, void *data_act)
 {
-	char *bodystr = (char*)data;
+	socket_data *d = (socket_data *)data_socket;
+	char *act = (char *)data_act;
+	struct json_object *jobj;
+	json_object *pval = NULL;
+
+	jobj = json_tokener_parse(d->body);
+	if(jobj != NULL){
+		pval = json_object_object_get(jobj, "ISP");
+		printf("ISP value: %s\n", json_object_get_string(pval));
+	}
 	
+	if(strcmp(act, "get") == 0){
+		
+		httpd_send_response(d, "get command");
+	} else {
+		httpd_send_response(d, "set command");
+	}
 }
 
 void* httpd_start(void *data)

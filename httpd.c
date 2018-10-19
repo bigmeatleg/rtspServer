@@ -59,6 +59,19 @@ int get_name_from_path(const char *path, char *name, size_t size)
     return strlen(name);
 }
 
+int trimfilename(char *dst, const char *src)
+{
+	int pos, size;
+	char *p;
+	p = strrchr(src, '/');
+	p++;
+	size = p - src + strlen(src);
+	
+	strncpy(dst, p, size);
+
+	return 0;
+}
+
 /* alloc a new buffer for http request.
  * we use its socket as http request key to make it simple.
  * socket data contains full information of a request.
@@ -146,10 +159,56 @@ int httpd_is_folder(const char *path)
     return S_ISDIR(s.st_mode);
 }
 
-int httpd_http_file(socket_data *d, const char *param)
+void httpd_send_response(socket_data * d, char * cmd)
 {
+	char buf[SENDBUF_SIZE], *p;
+	int size = 0;
+	size = httpd_reply_head(buf, 200);
+	size += snprintf(buf + size, SENDBUF_SIZE - size, "%s: %d\r\n", HTTP_CONTENT_LENGTH, strlen(cmd));
+	size += snprintf(buf + size, SENDBUF_SIZE - size, "%s: %s\r\n", HTTP_DATE_TIME, httpd_gmtime());
+    size += snprintf(buf + size, SENDBUF_SIZE - size, "%s: %s\r\n", HTTP_CONTENT_TYPE, httpd_mime_map(NULL));
+    size += snprintf(buf + size, SENDBUF_SIZE - size, "%s: %s\r\n", HTTP_CONNECTION, "close");
+    strcat(buf + size, "\r\n"); size += 2;
+
+	size = d->set->send(d->sock, buf, size, 0);
+	if(size <= 0)
+        return -1;
+	
+	size = strlen(cmd);
+	memcpy(buf, cmd, strlen(cmd));
+	size = d->set->send(d->sock, buf, size, 0);
+	if(size <= 0)
+		return -1;
+
+	return 0;
+	
+}
+
+int httpd_http_file(socket_data *d, const char *param, const char *fname)
+{
+#if 1
+	char buf[SENDBUF_SIZE], *p;
+    char path[MESSAGE_SIZE];
+	char filename[256];
+    const char* ext;
+    int size, total = 0;
+    FILE *fp;
+
+    // file name might contains parameter, we should cut it.
+    if(p = strchr(param, '?'), p != NULL)
+        strncpy(path, param, p - param);
+    else
+        strncpy(path, param, MESSAGE_SIZE);
+
+    //total = httpd_file_size(path);
+	trimfilename(filename, fname);
+
+	httpd_callback._CALLBACK(d, filename);
+
+#else
     char buf[SENDBUF_SIZE], *p;
     char path[MESSAGE_SIZE];
+	
     const char* ext;
     int size, total = 0;
     FILE *fp;
@@ -190,7 +249,7 @@ int httpd_http_file(socket_data *d, const char *param)
         total += size;
     }
     fclose(fp);
-	httpd_callback._CALLBACK(d->body);
+#endif	
 	
     return total;
 }
@@ -240,14 +299,16 @@ int httpd_default(socket_data *d, string_reference *fn)
 
     if(fn->size >= MESSAGE_SIZE)
         return d->set->error_page(d, 413, NULL);
+	
     string_reference_dup(fn, head);
+	
     if(strstr(head, ".."))
         return d->set->error_page(d, 403, NULL);
 
     if(head[fn->size - 1] == '/') {
         snprintf(path, MESSAGE_SIZE, "%s/%sindex.html", g_set.base, head);
         if(httpd_file_size(path) != (uint)(-1))
-            return d->set->http_file(d, path);
+            return d->set->http_file(d, path, head);
         // no index.html, we show it as folder.
     }
 
@@ -257,7 +318,7 @@ int httpd_default(socket_data *d, string_reference *fn)
     if(httpd_is_folder(path)){	
         return d->set->http_folder(d, path);
     } else {		
-        return d->set->http_file(d, path);
+        return d->set->http_file(d, path, head);
     }
 }
 
@@ -334,7 +395,6 @@ int httpd_decode_post(socket_data *d, string_reference *fn, string_reference *pa
     char *p, *e, *f1, *f2;
     int ret;
 
-	printf("header information: %s", d);
     p = d->head + sizeof(HTTP_POST);
     e = strstr(p, "\r\n");
     if(e == NULL)

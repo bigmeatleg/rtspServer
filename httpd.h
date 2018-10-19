@@ -7,7 +7,7 @@ extern "C" {
 
 #define RECVBUF_SIZE        4096
 #define SENDBUF_SIZE        4096
-#define MESSAGE_SIZE        256
+#define MESSAGE_SIZE		256
 #define BUFFER_COUNT        12
 #define FUNCTION_SIZE       32
 #define FUNCTION_COUNT      256
@@ -27,7 +27,7 @@ extern "C" {
 #define safe_free(p)        if(p) { free(p); p = NULL; }
 
 typedef struct {
-	void(*_CALLBACK)(void *data);
+	void(*_CALLBACK)(void *, void *);
 }HTTPD_CallBack;
 
 static HTTPD_CallBack httpd_callback;
@@ -115,7 +115,7 @@ typedef int   (*_http_filter)(socket_data *);
 // error page interface, used to customize error page.
 typedef int   (*_error_page)(socket_data *, int, const char *);
 // http file/index request function.
-typedef int   (*_http_file)(socket_data *, const char *);
+typedef int   (*_http_file)(socket_data *, const char *, const char *);
 // http folder request function.
 typedef int   (*_http_folder)(socket_data *, const char *);
 
@@ -144,7 +144,7 @@ struct _httpd {
 // helper functions:
 extern char* string_reference_dup(string_reference *str, char *buf);
 extern int httpd_reply_head(char *d, int code);
-extern int httpd_http_file(socket_data *d, const char *path);
+extern int httpd_http_file(socket_data *d, const char *path, const char *fname);
 extern int httpd_uri_parameters(socket_data *d, string_reference *s);
 extern int httpd_first_parameter(string_reference *s, string_reference *f);
 extern const char *httpd_code_message(int code);
@@ -158,6 +158,7 @@ void httpd_loop();
 void httpd_uninit();
 
 void httpd_set_callback(HTTPD_CallBack callbackfunc);
+void httpd_send_response(socket_data *d, char *cmd);
 
 #ifdef __cplusplus
 }

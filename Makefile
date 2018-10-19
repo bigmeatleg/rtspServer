@@ -68,6 +68,7 @@ INC_FLAGS += -I$(MPP_DIR)/media/LIBRARY/libisp
 INC_FLAGS += -I$(MPP_DIR)/media/LIBRARY/include_eve_common
 INC_FLAGS += -I$(MPP_DIR)/media/LIBRARY/libevekernel/include
 INC_FLAGS += -I$(MPP_DIR)/media/LIBRARY/libeveface/include
+INC_FLAGS += -I/usr/include/json-c
 
 LD_FLAG   :=
 LD_FLAG   += -L=/lib -L=/usr/lib
@@ -94,6 +95,7 @@ LD_FLAG   += -l_ise_bi -l_ise_bi_soft -l_ise_mo -l_ise_sti -lion -lcedarxstream
 LD_FLAG   += -lcdx_parser -lcdx_stream  -lvdecoder -lnormal_audio
 LD_FLAG   += -lcutils -lcedarx_aencoder -lisp_ini  -lVE  -lcdc_base -lcdx_base
 LD_FLAG   += -lvideoengine -ladecoder
+LD_FLAG   += -ljson-c
 endif
 
 #LD_FLAG   += -lmpp_menu -lmenu  -lmpp_com -lcommon
