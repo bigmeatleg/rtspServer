@@ -84,4 +84,4 @@ rtsp.o: rtsp.cpp /usr/include/json-c/json.h /usr/include/json-c/bits.h \
  /usr/include/mpp/middleware/media/include/component/ClockCompPortIndex.h \
  /usr/include/mpp/middleware/media/LIBRARY/libcedarc/include/sc_interface.h \
  /usr/include/mpp/middleware/../system/include/libion/ion_memmanager.h \
- MediaStream.h TinyServer.h httpd.h
+ MediaStream.h TinyServer.h httpd.h rtsp.h
