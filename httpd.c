@@ -171,16 +171,22 @@ void httpd_send_response(socket_data * d, char * cmd)
     strcat(buf + size, "\r\n"); size += 2;
 
 	size = d->set->send(d->sock, buf, size, 0);
-	if(size <= 0)
-        return -1;
+	if(size <= 0){
+		printf("send error.\n");		
+		return;
+	}
+//        return -1;
 	
 	size = strlen(cmd);
 	memcpy(buf, cmd, strlen(cmd));
 	size = d->set->send(d->sock, buf, size, 0);
-	if(size <= 0)
-		return -1;
+	if(size <= 0){
+		printf("send error.\n");
+		return;
+		//return -1;
+	}
 
-	return 0;
+	return;
 	
 }
 

@@ -48,6 +48,15 @@
 
 static httpd g_set;
 
+typedef int(* _gctrl_api)(int IspDev, int *value);
+typedef int(* _sctrl_api)(int IspDev, int value);
+
+typedef struct tag_ctrl_node {
+	char 		*index_node;
+	_gctrl_api	gfunc;
+	_sctrl_api	sfunc;
+} API_NODE;
+
 /************************************************************************************************/
 /*                                    Structure Declarations                                    */
 /************************************************************************************************/
@@ -84,7 +93,7 @@ static MediaStream *g_stream_1 = NULL;
 
 static unsigned int   g_rc_mode   = 0;          /* 0:CBR 1:VBR 2:FIXQp 3:ABR 4:QPMAP */
 static unsigned int   g_profile   = 1;          /* 0: baseline  1:MP  2:HP  3: SVC-T [0,3] */
-static PAYLOAD_TYPE_E g_venc_type = PT_H265;    /* PT_H264/PT_H265/PT_MJPEG */
+static PAYLOAD_TYPE_E g_venc_type = PT_H264;    /* PT_H264/PT_H265/PT_MJPEG */
 static ROTATE_E       g_rotate    = ROTATE_NONE;
 
 static MPP_COM_VI_TYPE_E g_vi_type_0 = VI_720P_30FPS;
@@ -94,6 +103,24 @@ static VENC_CFG_TYPE_E g_venc_type_0 = VENC_720P_TO_720P_4M_30FPS;
 static VENC_CFG_TYPE_E g_venc_type_1 = VENC_720P_TO_720P_4M_25FPS;
 
 static int iIspDev = ISP_DEV_1;
+
+static API_NODE g_api_list[] = {
+	{(char *)ISP_AE_MODE, 				AW_MPI_ISP_AE_GetMode, 					AW_MPI_ISP_AE_SetMode},
+	{(char *)ISP_AE_EXPOSUREBIAS, 		AW_MPI_ISP_AE_GetExposureBias, 			AW_MPI_ISP_AE_SetExposureBias},
+	{(char *)ISP_AE_GAIN, 				AW_MPI_ISP_AE_GetGain, 					AW_MPI_ISP_AE_SetGain},
+	{(char *)ISP_AWB_MODE, 				AW_MPI_ISP_AWB_GetMode, 				AW_MPI_ISP_AWB_SetMode},
+	{(char *)ISP_AWB_COLORTEMP, 		AW_MPI_ISP_AWB_GetColorTemp, 			AW_MPI_ISP_AWB_SetColorTemp},
+	{(char *)ISP_AWB_ISOMODE, 			AW_MPI_ISP_AWB_GetISOSensitiveMode, 	AW_MPI_ISP_AWB_SetISOSensitiveMode},
+	{(char *)ISP_AWB_ISOSENSITIVE, 		AW_MPI_ISP_AWB_GetISOSensitive, 		AW_MPI_ISP_AWB_SetISOSensitive},
+	{(char *)ISP_AWB_RGAIN, 			AW_MPI_ISP_AWB_GetRGain, 				AW_MPI_ISP_AWB_SetRGain},
+	{(char *)ISP_AWB_BGAIN, 			AW_MPI_ISP_AWB_GetBGain, 				AW_MPI_ISP_AWB_SetBGain},
+	{(char *)ISP_FLICKER, 				AW_MPI_ISP_GetFlicker, 					AW_MPI_ISP_SetFlicker},
+	{(char *)ISP_BRIGHTNESS, 			AW_MPI_ISP_GetBrightness, 				AW_MPI_ISP_SetBrightness},
+	{(char *)ISP_CONTRAST, 				AW_MPI_ISP_GetContrast, 				AW_MPI_ISP_SetContrast},
+	{(char *)ISP_SATURATION, 			AW_MPI_ISP_GetSaturation,				AW_MPI_ISP_SetSaturation},
+	{(char *)ISP_SHARPNESS, 			AW_MPI_ISP_GetSharpness, 				AW_MPI_ISP_SetSharpness},
+	{NULL, NULL}
+};
 
 //static MPP_MENU_VI_VENC_CFG_E  g_vi_ve_cfg = VI_4K_25FPS_VE_4K_25FPS_VE_720P_25FPS;
 
@@ -299,70 +326,32 @@ static int rtsp_start(TinyServer *rtsp)
     return 0;
 }
 
-int query_config_data(json_object **obj, const char *key)
+int get_config_data(json_object **obj, const char *key)
 {
 	json_object *jobj;
-	int val;
-	if(strcmp(key, ISP_AE_MODE) == 0){
-		AW_MPI_ISP_AE_GetMode(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_AE_MODE, jobj);
-	}else if(strcmp(key, ISP_AE_EXPOSUREBIAS) == 0){
-		AW_MPI_ISP_AE_GetExposureBias(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_AE_EXPOSUREBIAS, jobj);
-	}else if(strcmp(key, ISP_AE_EXPOSURE) == 0){
-		AW_MPI_ISP_AE_GetExposure(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_AE_EXPOSURE, jobj);
-	} else if(strcmp(key, ISP_AE_GAIN) == 0) {
-		AW_MPI_ISP_AE_GetGain(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_AE_GAIN, jobj);
-	}else if(strcmp(key, ISP_AWB_MODE) == 0){
-		AW_MPI_ISP_AWB_GetMode(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_AWB_MODE, jobj);
-	}else if(strcmp(key, ISP_AWB_COLORTEMP) == 0){
-		AW_MPI_ISP_AWB_GetColorTemp(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_AWB_COLORTEMP, jobj);
-	}else if(strcmp(key, ISP_AWB_ISOMODE) == 0){
-		AW_MPI_ISP_AWB_GetISOSensitiveMode(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_AWB_ISOMODE, jobj);
-	}else if(strcmp(key, ISP_AWB_ISOSENSITIVE) == 0){
-		AW_MPI_ISP_AWB_GetISOSensitive(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_AWB_ISOSENSITIVE, jobj);
-	}else if(strcmp(key, ISP_AWB_RGAIN) == 0){
-		AW_MPI_ISP_AWB_GetRGain(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_AWB_RGAIN, jobj);
-	}else if(strcmp(key, ISP_AWB_BGAIN) == 0){
-		AW_MPI_ISP_AWB_GetBGain(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_AWB_BGAIN, jobj);
-	}else if(strcmp(key, ISP_FLICKER) == 0){
-		AW_MPI_ISP_GetFlicker(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_FLICKER, jobj);
-	} else if(strcmp(key, ISP_BRIGHTNESS) == 0){
-		AW_MPI_ISP_GetBrightness(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_BRIGHTNESS, jobj);
-	} else if(strcmp(key, ISP_CONTRAST) == 0){
-		AW_MPI_ISP_GetContrast(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_CONTRAST, jobj);
-	} else if(strcmp(key, ISP_SATURATION) == 0){
-		AW_MPI_ISP_GetSaturation(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_SATURATION, jobj);
-	} else if(strcmp(key, ISP_SHARPNESS) == 0){
-		AW_MPI_ISP_GetSharpness(iIspDev, &val);
-		jobj = json_object_new_int(val);
-		json_object_object_add(*obj, ISP_SHARPNESS, jobj);
+	int val, i;
+	for(int i = 0; NULL != g_api_list[i].index_node; i ++){
+		if(strcmp(g_api_list[i].index_node, key) == 0){
+			g_api_list[i].gfunc(iIspDev, &val);
+			jobj = json_object_new_int(val);
+			json_object_object_add(*obj, key, jobj);
+		}
+	}
+	
+	return 0;
+}
+
+int set_config_data(json_object **obj, const char *key, int value)
+{
+	json_object *jobj;
+	int val, i ;
+	for(int i =0; NULL != g_api_list[i].index_node; i ++){
+		if(strcmp(g_api_list[i].index_node, key) == 0){
+			g_api_list[i].sfunc(iIspDev, value);
+			g_api_list[i].gfunc(iIspDev, &val);
+			jobj = json_object_new_int(val);
+			json_object_object_add(*obj, key, jobj);
+		}
 	}
 
 	return 0;
@@ -378,30 +367,47 @@ void httpdCallBack(void *data_socket, void *data_act)
 	struct json_object *g_jobj;
 	json_bool	status;
 	char response[4096];
-	
+
+	const char *json_key;
+	struct json_object *json_value;
+	int m_value;
+
+	m_jobj = json_tokener_parse(d->body);	
 	if(strcmp(act, "get") == 0){		
-		m_jobj = json_tokener_parse(d->body);
-		
 		if(m_jobj != NULL){
-			m_jobj = json_tokener_parse(d->body);
 			g_jobj = json_object_new_object();
-		
 			status = json_object_object_get_ex(m_jobj, (const char*)"ISP", &d_jobj);
+		
 			if(status){
 				arraylen = json_object_array_length(d_jobj);
 				for(i = 0; i < arraylen; i++){
 					jitem = json_object_array_get_idx(d_jobj, i);
 					//printf("%d: %s\n", i, json_object_get_string(jitem));
-					query_config_data(&g_jobj, json_object_get_string(jitem));
+					get_config_data(&g_jobj, json_object_get_string(jitem));
 				}
-				
-				strcpy(response, json_object_to_json_string(g_jobj));		
+				strcpy(response, json_object_to_json_string(g_jobj));
 			}	
-		}		
-
+		} else {
+			strcpy(response, "data format error.");
+		}
 		httpd_send_response(d, response);
 	} else {
-		httpd_send_response(d, (char *)"set command");
+		if(m_jobj != NULL){
+			g_jobj = json_object_new_object();
+			status = json_object_object_get_ex(m_jobj, (const char*)"ISP", &d_jobj);
+		
+			if(status){
+				json_object_object_foreach(d_jobj, json_key, json_value){
+					m_value = json_object_get_int(json_value);
+					set_config_data(&g_jobj, json_key, m_value);
+				}
+
+				strcpy(response, json_object_to_json_string(g_jobj));
+			}	
+		} else {
+			strcpy(response, "data format error.");
+		}
+		httpd_send_response(d, response);
 	}
 }
 
