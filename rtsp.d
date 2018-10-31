@@ -21,6 +21,8 @@ rtsp.o: rtsp.cpp /usr/include/json-c/json.h /usr/include/json-c/bits.h \
  /usr/include/mpp/middleware/media/LIBRARY/libisp/include/V4l2Camera/linux/v4l2-common.h \
  /usr/include/mpp/middleware/media/LIBRARY/libisp/include/V4l2Camera/linux/v4l2-controls.h \
  /usr/include/mpp/middleware/include/utils/aw_type.h \
+ /usr/include/mpp/middleware/include/media/mm_comm_region.h \
+ /usr/include/mpp/middleware/include/media/mm_comm_video.h \
  /usr/include/mpp/middleware/include/media/mpi_ise.h \
  /usr/include/mpp/middleware/include/media/mm_comm_ise.h \
  /usr/include/mpp/middleware/media/LIBRARY/libISE/ISE_lib_bi.h \
@@ -28,7 +30,6 @@ rtsp.o: rtsp.cpp /usr/include/json-c/json.h /usr/include/json-c/bits.h \
  /usr/include/mpp/middleware/media/LIBRARY/libISE/ISE_lib_mo.h \
  /usr/include/mpp/middleware/media/LIBRARY/libISE/ISE_lib_sti.h \
  /usr/include/mpp/middleware/include/media/mpi_venc.h \
- /usr/include/mpp/middleware/include/media/mm_comm_video.h \
  /usr/include/mpp/middleware/include/media/mm_comm_venc.h \
  /usr/include/mpp/middleware/include/media/mm_comm_rc.h \
  /usr/include/mpp/middleware/media/LIBRARY/libcedarc/include/vencoder.h \
@@ -46,21 +47,39 @@ rtsp.o: rtsp.cpp /usr/include/json-c/json.h /usr/include/json-c/bits.h \
  /usr/include/mpp/middleware/include/media/mm_comm_mux.h \
  /usr/include/mpp/middleware/media/LIBRARY/include_FsWriter/FsWriter.h \
  /usr/include/mpp/middleware/media/LIBRARY/include_stream/cedarx_stream.h \
+ /usr/include/mpp/middleware/media/include/component/RecorderMode.h \
+ /usr/include/mpp/middleware/media/LIBRARY/include_muxer/record_writer.h \
  /usr/include/mpp/middleware/include/media/mpi_demux.h \
  /usr/include/mpp/middleware/include/media/mm_comm_demux.h \
  /usr/include/mpp/middleware/media/include/component/EncodedStream.h \
  /usr/include/mpp/middleware/media/include/component/DemuxCompStream.h \
  /usr/include/mpp/middleware/include/media/mpi_vdec.h \
  /usr/include/mpp/middleware/include/media/mm_comm_vdec.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libcedarc/include/vdecoder.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libcedarc/include/typedef.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libcedarc/include/sc_interface.h \
  /usr/include/mpp/middleware/include/media/mpi_isp.h \
  /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_type.h \
- /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_comm.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_manage.h \
  /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_type.h \
- /usr/include/mpp/middleware/media/LIBRARY/libisp/include/../include/platform.h \
- /usr/include/mpp/middleware/media/LIBRARY/libisp/include/../include/platform/sun8iw12p1_cfg.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_module_cfg.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_comm.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_debug.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_3a_af.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_3a_afs.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_3a_md.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_3a_awb.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_3a_ae.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_tone_mapping.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_iso_config.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_base.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_rolloff.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_pltm.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/../isp_tuning/isp_tuning_priv.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/../isp_tuning/../include/isp_type.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/../isp_tuning/../include/isp_comm.h \
+ /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_comm.h \
  /usr/include/mpp/middleware/media/LIBRARY/libisp/isp_tuning/isp_tuning_priv.h \
- /usr/include/mpp/middleware/media/LIBRARY/libisp/isp_tuning/../include/isp_type.h \
- /usr/include/mpp/middleware/media/LIBRARY/libisp/isp_tuning/../include/isp_comm.h \
  /usr/include/mpp/middleware/media/LIBRARY/libisp/include/isp_tuning.h \
  /usr/include/mpp/middleware/media/LIBRARY/libisp/include/../include/isp_type.h \
  /usr/include/mpp/middleware/media/LIBRARY/libisp/include/../include/isp_comm.h \
@@ -72,7 +91,6 @@ rtsp.o: rtsp.cpp /usr/include/json-c/json.h /usr/include/json-c/bits.h \
  /usr/include/mpp/middleware/include/media/mpi_adec.h \
  /usr/include/mpp/middleware/include/media/mm_comm_adec.h \
  /usr/include/mpp/middleware/include/media/mpi_region.h \
- /usr/include/mpp/middleware/include/media/mm_comm_region.h \
  /usr/include/mpp/middleware/include/media/mm_common.h \
  /usr/include/mpp/middleware/include/media/mm_comm_video.h \
  /usr/include/mpp/middleware/include/media/mm_comm_venc.h \
@@ -82,6 +100,5 @@ rtsp.o: rtsp.cpp /usr/include/json-c/json.h /usr/include/json-c/bits.h \
  /usr/include/mpp/middleware/include/media/mm_comm_region.h \
  /usr/include/mpp/middleware/media/LIBRARY/libcedarc/include/memoryAdapter.h \
  /usr/include/mpp/middleware/media/include/component/ClockCompPortIndex.h \
- /usr/include/mpp/middleware/media/LIBRARY/libcedarc/include/sc_interface.h \
  /usr/include/mpp/middleware/../system/include/libion/ion_memmanager.h \
  MediaStream.h TinyServer.h httpd.h rtsp.h

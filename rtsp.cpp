@@ -38,7 +38,7 @@
 /************************************************************************************************/
 //#define ENABLE_VO_CLOCK
 
-//#define AI_ENABLE
+#define AI_ENABLE
 #define HTTP_HEADER_END     "\r\n\r\n"
 #define HTTP_GET            "GET"
 #define HTTP_POST           "POST"
@@ -68,16 +68,21 @@ struct vi_venc_vo_param {
     MediaStream    *stream;
 };
 
-struct isp_request_parm	{
-	char 			bitAE_mode: 1;
-	char			bitAE_exposureBias: 1;
-	char			bitAE_exposure: 1;
-	char			bitAE_gain: 1;
-	char			bitAWB_mode: 1;
-	char			bitAWB_colortemp: 1;
-	char			bitAWB_iso_sensitivity_mode: 1;
-	char			bitAWB_iso_sensitivity: 1;
-};
+/************************************************************************************************/
+/*                                    Function Declarations                                     */
+/************************************************************************************************/
+int venc_get_bitrate(int dev, int *val);
+int venc_set_bitrate(int dev, int val);
+
+
+
+
+/************************************************************************************************/
+/*                                     Function Definitions                                     */
+/************************************************************************************************/
+
+
+
 /************************************************************************************************/
 /*                                      Global Variables                                        */
 /************************************************************************************************/
@@ -93,7 +98,7 @@ static MediaStream *g_stream_1 = NULL;
 
 static unsigned int   g_rc_mode   = 0;          /* 0:CBR 1:VBR 2:FIXQp 3:ABR 4:QPMAP */
 static unsigned int   g_profile   = 1;          /* 0: baseline  1:MP  2:HP  3: SVC-T [0,3] */
-static PAYLOAD_TYPE_E g_venc_type = PT_H264;    /* PT_H264/PT_H265/PT_MJPEG */
+static PAYLOAD_TYPE_E g_venc_type = PT_H265;    /* PT_H264/PT_H265/PT_MJPEG */
 static ROTATE_E       g_rotate    = ROTATE_NONE;
 
 static MPP_COM_VI_TYPE_E g_vi_type_0 = VI_720P_30FPS;
@@ -103,15 +108,17 @@ static VENC_CFG_TYPE_E g_venc_type_0 = VENC_720P_TO_720P_4M_30FPS;
 static VENC_CFG_TYPE_E g_venc_type_1 = VENC_720P_TO_720P_4M_25FPS;
 
 static int iIspDev = ISP_DEV_1;
+static int iAiDev = AI_DEV_0;
+static int iVencChn = VENC_CHN_0;
 
-static API_NODE g_api_list[] = {
+static API_NODE g_isp_api_list[] = {
 	{(char *)ISP_AE_MODE, 				AW_MPI_ISP_AE_GetMode, 					AW_MPI_ISP_AE_SetMode},
 	{(char *)ISP_AE_EXPOSUREBIAS, 		AW_MPI_ISP_AE_GetExposureBias, 			AW_MPI_ISP_AE_SetExposureBias},
 	{(char *)ISP_AE_GAIN, 				AW_MPI_ISP_AE_GetGain, 					AW_MPI_ISP_AE_SetGain},
 	{(char *)ISP_AWB_MODE, 				AW_MPI_ISP_AWB_GetMode, 				AW_MPI_ISP_AWB_SetMode},
 	{(char *)ISP_AWB_COLORTEMP, 		AW_MPI_ISP_AWB_GetColorTemp, 			AW_MPI_ISP_AWB_SetColorTemp},
-	{(char *)ISP_AWB_ISOMODE, 			AW_MPI_ISP_AWB_GetISOSensitiveMode, 	AW_MPI_ISP_AWB_SetISOSensitiveMode},
-	{(char *)ISP_AWB_ISOSENSITIVE, 		AW_MPI_ISP_AWB_GetISOSensitive, 		AW_MPI_ISP_AWB_SetISOSensitive},
+	//{(char *)ISP_AWB_ISOMODE, 			AW_MPI_ISP_AWB_GetISOSensitiveMode, 	AW_MPI_ISP_AWB_SetISOSensitiveMode},
+	//{(char *)ISP_AWB_ISOSENSITIVE, 		AW_MPI_ISP_AWB_GetISOSensitive, 		AW_MPI_ISP_AWB_SetISOSensitive},
 	{(char *)ISP_AWB_RGAIN, 			AW_MPI_ISP_AWB_GetRGain, 				AW_MPI_ISP_AWB_SetRGain},
 	{(char *)ISP_AWB_BGAIN, 			AW_MPI_ISP_AWB_GetBGain, 				AW_MPI_ISP_AWB_SetBGain},
 	{(char *)ISP_FLICKER, 				AW_MPI_ISP_GetFlicker, 					AW_MPI_ISP_SetFlicker},
@@ -119,20 +126,21 @@ static API_NODE g_api_list[] = {
 	{(char *)ISP_CONTRAST, 				AW_MPI_ISP_GetContrast, 				AW_MPI_ISP_SetContrast},
 	{(char *)ISP_SATURATION, 			AW_MPI_ISP_GetSaturation,				AW_MPI_ISP_SetSaturation},
 	{(char *)ISP_SHARPNESS, 			AW_MPI_ISP_GetSharpness, 				AW_MPI_ISP_SetSharpness},
-	{NULL, NULL}
+	{NULL, NULL, NULL}
+};
+
+static API_NODE g_ai_api_list[] = {
+	{(char *)AI_VOLUME, 				AW_MPI_AI_GetDevVolume,					AW_MPI_AI_SetDevVolume},
+	{(char *)AI_MUTE, 					AW_MPI_AI_GetDevMute,					AW_MPI_AI_SetDevMute},	
+	{NULL, NULL, NULL}
+};
+
+static API_NODE	g_venc_api_list[] = {
+	{(char *)VENC_BITRATE,				venc_get_bitrate, 				venc_set_bitrate},
+	{NULL, NULL, NULL}
 };
 
 //static MPP_MENU_VI_VENC_CFG_E  g_vi_ve_cfg = VI_4K_25FPS_VE_4K_25FPS_VE_720P_25FPS;
-
-/************************************************************************************************/
-/*                                    Function Declarations                                     */
-/************************************************************************************************/
-/* None */
-
-
-/************************************************************************************************/
-/*                                     Function Definitions                                     */
-/************************************************************************************************/
 	
 int holdloop()
 {
@@ -149,6 +157,115 @@ int holdloop()
 		sleep(1);
     }
 	
+}
+
+int venc_get_bitrate(int dev, int *val)
+{
+	int  ret      = 0;
+	VENC_CHN_ATTR_S venc_attr;
+	
+	ret = AW_MPI_VENC_GetChnAttr(dev, &venc_attr);
+	if (ret) {
+    	ERR_PRT(" Do AW_MPI_VENC_GetChnAttr chn:%d fail. ret:0x%x \n", dev, ret);
+      	return ret;
+    }
+	printf("\n================ VENC Chn[%d] VeAttr ===============\n", dev);
+    printf(" VeAttr.Type:%d \n", venc_attr.VeAttr.Type);
+    printf(" VeAttr.SrcPicWidth:%d  SrcPicHeight:%d\n", venc_attr.VeAttr.SrcPicWidth, venc_attr.VeAttr.SrcPicHeight);
+   	printf(" VeAttr.MaxKeyInterval:%d  Field:%d  PixelFormat:%d  Rotate:%d\n\n",
+         venc_attr.VeAttr.MaxKeyInterval, venc_attr.VeAttr.Field, venc_attr.VeAttr.PixelFormat, venc_attr.VeAttr.Rotate);
+	
+	switch (venc_attr.RcAttr.mRcMode) {
+        case VENC_RC_MODE_H264CBR:
+            *val = venc_attr.RcAttr.mAttrH264Cbr.mBitRate;
+            break;
+        case VENC_RC_MODE_H264VBR:
+            *val = venc_attr.RcAttr.mAttrH264Vbr.mMaxBitRate;
+            break;
+        case VENC_RC_MODE_H264ABR:
+            *val = venc_attr.RcAttr.mAttrH264Abr.mMaxBitRate;
+            break;
+        case VENC_RC_MODE_H264FIXQP:
+        case VENC_RC_MODE_H264QPMAP:
+            break;
+
+        case VENC_RC_MODE_H265CBR:
+            *val = venc_attr.RcAttr.mAttrH265Cbr.mBitRate;
+            break;
+        case VENC_RC_MODE_H265VBR:
+            *val = venc_attr.RcAttr.mAttrH265Vbr.mMaxBitRate;
+            break;
+        case VENC_RC_MODE_H265FIXQP:
+        case VENC_RC_MODE_H265QPMAP:
+            break;
+
+        default:
+            DB_PRT("Venc_chn:%d input mRcMode:%d don't support!\n", dev, venc_attr.RcAttr.mRcMode);
+            return -1;
+            break;
+   	}
+
+	*val = *val/1000;
+
+	return 0;
+}
+
+int venc_set_bitrate(int dev, int val)
+{
+	int  ret      = 0;
+	int  tmp      = 0;
+	VENC_CHN_ATTR_S venc_attr;
+	ret = AW_MPI_VENC_GetChnAttr(dev, &venc_attr);
+	if (ret) {
+    	ERR_PRT(" Do AW_MPI_VENC_GetChnAttr chn:%d fail. ret:0x%x \n", dev, ret);
+      	return ret;
+    }
+
+	switch (venc_attr.RcAttr.mRcMode) {
+        case VENC_RC_MODE_H264CBR:
+            tmp = venc_attr.RcAttr.mAttrH264Cbr.mBitRate / 1000;
+            venc_attr.RcAttr.mAttrH264Cbr.mBitRate = val * 1000;
+            break;
+        case VENC_RC_MODE_H264VBR:
+            tmp = venc_attr.RcAttr.mAttrH264Vbr.mMaxBitRate / 1000;
+            venc_attr.RcAttr.mAttrH264Vbr.mMaxBitRate = val * 1000;
+            break;
+        case VENC_RC_MODE_H264ABR:
+            tmp = venc_attr.RcAttr.mAttrH264Abr.mMaxBitRate / 1000;
+            venc_attr.RcAttr.mAttrH264Abr.mMaxBitRate = val * 1000;
+            break;
+        case VENC_RC_MODE_H264FIXQP:
+        case VENC_RC_MODE_H264QPMAP:
+            break;
+
+        case VENC_RC_MODE_H265CBR:
+            tmp = venc_attr.RcAttr.mAttrH265Cbr.mBitRate / 1000;
+            venc_attr.RcAttr.mAttrH265Cbr.mBitRate = val * 1000;
+            break;
+        case VENC_RC_MODE_H265VBR:
+            tmp = venc_attr.RcAttr.mAttrH265Vbr.mMaxBitRate / 1000;
+            venc_attr.RcAttr.mAttrH265Vbr.mMaxBitRate = val * 1000;
+            break;
+        case VENC_RC_MODE_H265FIXQP:
+        case VENC_RC_MODE_H265QPMAP:
+            break;
+
+        default:
+            DB_PRT("Input mRcMode:%d don't support!\n", venc_attr.RcAttr.mRcMode);
+            return -1;
+            break;
+	}
+
+	ret = AW_MPI_VENC_SetChnAttr(dev, &venc_attr);
+    if (ret) {
+    	ERR_PRT(" Do AW_MPI_VENC_SetChnAttr venc_chn:%d bitrate:(%dkbps)-->(%dkbps) fail! ret:0x%x\n", dev, tmp, val, ret);
+
+		return -1;
+   	} else {
+        DB_PRT(" Do AW_MPI_VENC_SetChnAttr venc_chn:%d bitrate:(%dkbps)-->(%dkbps) success! ret:0x%x\n", dev, tmp, val, ret);
+    }
+	
+	return 0;
 }
 
 static ERRORTYPE MPPCallbackFunc(void *cookie, MPP_CHN_S *pChn, MPP_EVENT_TYPE event, void *pEventData)
@@ -181,7 +298,7 @@ static void *SelectStreamSendByRtsp(void *param)
 
     /****** Add Video fd ******/
     chn_cnt = 0;
-    hand_fd[0] = AW_MPI_VENC_GetHandle(VENC_CHN_0);
+    hand_fd[0] = AW_MPI_VENC_GetHandle(iVencChn);
     AW_MPI_SYS_HANDLE_SET(hand_fd[0], &bak_fds);
 #if 0	
     hand_fd[1] = AW_MPI_VENC_GetHandle(VENC_CHN_1);
@@ -189,7 +306,7 @@ static void *SelectStreamSendByRtsp(void *param)
     chn_cnt++;
 #endif	 
 
-    AW_MPI_VENC_GetChnAttr(VENC_CHN_0, &venc_attr);
+    AW_MPI_VENC_GetChnAttr(iVencChn, &venc_attr);
     venc_type[0] = venc_attr.VeAttr.Type;
 #if 0	
     AW_MPI_VENC_GetChnAttr(VENC_CHN_1, &venc_attr);
@@ -326,13 +443,76 @@ static int rtsp_start(TinyServer *rtsp)
     return 0;
 }
 
-int get_config_data(json_object **obj, const char *key)
+int get_venc_config_data(json_object **obj, const char *key)
 {
 	json_object *jobj;
 	int val, i;
-	for(int i = 0; NULL != g_api_list[i].index_node; i ++){
-		if(strcmp(g_api_list[i].index_node, key) == 0){
-			g_api_list[i].gfunc(iIspDev, &val);
+	for(i =0; NULL != g_venc_api_list[i].index_node; i ++){
+		if(strcmp(g_venc_api_list[i].index_node, key) == 0){
+			g_venc_api_list[i].gfunc(iVencChn, &val);
+			jobj = json_object_new_int(val);
+			json_object_object_add(*obj, key, jobj);				
+		}
+	}
+
+	return 0;
+}
+
+int set_venc_config_data(json_object **obj, const char *key, int value)
+{
+	json_object *jobj;
+	int val, i, ret;
+	for(i = 0; NULL !=g_venc_api_list[i].index_node; i ++){
+		if(strcmp(g_venc_api_list[i].index_node, key) == 0){
+			ret = g_venc_api_list[i].sfunc(iVencChn, value);
+			if(ret == 0){
+				jobj = json_object_new_int(value);				
+			} else {
+				g_venc_api_list[i].gfunc(iVencChn, &val);
+				jobj = json_object_new_int(val);
+			}
+
+			json_object_object_add(*obj, key, jobj);
+		}
+	}
+}
+
+int get_ai_config_data(json_object **obj, const char *key)
+{
+	json_object *jobj;
+	int val, i;
+	for(i =0; NULL != g_ai_api_list[i].index_node; i ++){
+		if(strcmp(g_ai_api_list[i].index_node, key) == 0){
+			g_isp_api_list[i].gfunc(iAiDev, &val);
+			jobj = json_object_new_int(val);
+			json_object_object_add(*obj, key, jobj);
+		}
+	}
+
+	return 0;
+}
+
+int set_ai_config_data(json_object **obj, const char *key, int value)
+{
+	json_object *jobj;
+	int val, i;
+	for(i = 0; NULL != g_ai_api_list[i].index_node; i ++){
+		if(strcmp(g_ai_api_list[i].index_node, key)== 0){
+			g_ai_api_list[i].sfunc(iAiDev, value);
+			g_ai_api_list[i].gfunc(iAiDev, &val);
+			jobj = json_object_new_int(val);
+			json_object_object_add(*obj, key, jobj);
+		}
+	}
+}
+
+int get_isp_config_data(json_object **obj, const char *key)
+{
+	json_object *jobj;
+	int val, i;
+	for(i = 0; NULL != g_isp_api_list[i].index_node; i ++){
+		if(strcmp(g_isp_api_list[i].index_node, key) == 0){
+			g_isp_api_list[i].gfunc(iIspDev, &val);
 			jobj = json_object_new_int(val);
 			json_object_object_add(*obj, key, jobj);
 		}
@@ -341,14 +521,14 @@ int get_config_data(json_object **obj, const char *key)
 	return 0;
 }
 
-int set_config_data(json_object **obj, const char *key, int value)
+int set_isp_config_data(json_object **obj, const char *key, int value)
 {
 	json_object *jobj;
 	int val, i ;
-	for(int i =0; NULL != g_api_list[i].index_node; i ++){
-		if(strcmp(g_api_list[i].index_node, key) == 0){
-			g_api_list[i].sfunc(iIspDev, value);
-			g_api_list[i].gfunc(iIspDev, &val);
+	for(i =0; NULL != g_isp_api_list[i].index_node; i ++){
+		if(strcmp(g_isp_api_list[i].index_node, key) == 0){
+			g_isp_api_list[i].sfunc(iIspDev, value);
+			g_isp_api_list[i].gfunc(iIspDev, &val);
 			jobj = json_object_new_int(val);
 			json_object_object_add(*obj, key, jobj);
 		}
@@ -376,17 +556,36 @@ void httpdCallBack(void *data_socket, void *data_act)
 	if(strcmp(act, "get") == 0){		
 		if(m_jobj != NULL){
 			g_jobj = json_object_new_object();
-			status = json_object_object_get_ex(m_jobj, (const char*)"ISP", &d_jobj);
-		
+			status = json_object_object_get_ex(m_jobj, (const char*)ISP, &d_jobj);
 			if(status){
 				arraylen = json_object_array_length(d_jobj);
 				for(i = 0; i < arraylen; i++){
 					jitem = json_object_array_get_idx(d_jobj, i);
 					//printf("%d: %s\n", i, json_object_get_string(jitem));
-					get_config_data(&g_jobj, json_object_get_string(jitem));
+					get_isp_config_data(&g_jobj, json_object_get_string(jitem));
 				}
 				strcpy(response, json_object_to_json_string(g_jobj));
-			}	
+			}
+
+			status = json_object_object_get_ex(m_jobj, (const char*)AI, &d_jobj);
+			if(status){
+				arraylen = json_object_array_length(d_jobj);
+				for(i=0; i < arraylen; i ++){
+					jitem = json_object_array_get_idx(d_jobj, i);
+					get_ai_config_data(&g_jobj, json_object_get_string(jitem));
+				}
+				strcpy(response, json_object_to_json_string(g_jobj));
+			}
+
+			status = json_object_object_get_ex(m_jobj, (const char*)VENC, &d_jobj);
+			if(status){
+				arraylen = json_object_array_length(d_jobj);
+				for(i=0; i < arraylen; i ++){
+					jitem = json_object_array_get_idx(d_jobj, i);
+					get_venc_config_data(&g_jobj, json_object_get_string(jitem));
+				}
+				strcpy(response, json_object_to_json_string(g_jobj));
+			}
 		} else {
 			strcpy(response, "data format error.");
 		}
@@ -394,12 +593,12 @@ void httpdCallBack(void *data_socket, void *data_act)
 	} else {
 		if(m_jobj != NULL){
 			g_jobj = json_object_new_object();
-			status = json_object_object_get_ex(m_jobj, (const char*)"ISP", &d_jobj);
+			status = json_object_object_get_ex(m_jobj, (const char*)ISP, &d_jobj);
 		
 			if(status){
 				json_object_object_foreach(d_jobj, json_key, json_value){
 					m_value = json_object_get_int(json_value);
-					set_config_data(&g_jobj, json_key, m_value);
+					set_isp_config_data(&g_jobj, json_key, m_value);
 				}
 
 				strcpy(response, json_object_to_json_string(g_jobj));
@@ -543,7 +742,7 @@ static int venc_create(void)
         ERR_PRT("Do mpp_comm_venc_get_cfg fail! ret:%d \n", ret);
         return -1;
     }
-    ret = mpp_comm_venc_create(VENC_CHN_0, g_venc_type, g_rc_mode, g_profile, g_rotate, &venc_cfg);
+    ret = mpp_comm_venc_create(iVencChn, g_venc_type, g_rc_mode, g_profile, g_rotate, &venc_cfg);
     if (ret) {
         ERR_PRT("Do mpp_comm_venc_create fail! ret:%d \n", ret);
         return -1;
@@ -566,7 +765,7 @@ static int venc_create(void)
     MPPCallbackInfo venc_cb;
     venc_cb.cookie   = NULL;
     venc_cb.callback = (MPPCallbackFuncType)&MPPCallbackFunc;
-    AW_MPI_VENC_RegisterCallback(VENC_CHN_0, &venc_cb);
+    AW_MPI_VENC_RegisterCallback(iVencChn, &venc_cb);
 
     return 0;
 }
@@ -575,9 +774,9 @@ static int venc_destroy(void)
 {
     int ret = 0;
 
-    ret = mpp_comm_venc_destroy(VENC_CHN_0);
+    ret = mpp_comm_venc_destroy(iVencChn);
     if (ret) {
-        ERR_PRT("Do mpp_comm_venc_destroy fail! ret:%d  venc_chn:%d \n", ret, VENC_CHN_0);
+        ERR_PRT("Do mpp_comm_venc_destroy fail! ret:%d  venc_chn:%d \n", ret, iVencChn);
     }
 	
 #if 0	
@@ -771,7 +970,7 @@ static int components_bind(void)
     int ret = 0;
 
     /****** Bind video mode ******/
-    ret = mpp_comm_vi_bind_venc(VI_DEV_0, VI_CHN_0, VENC_CHN_0);
+    ret = mpp_comm_vi_bind_venc(VI_DEV_0, VI_CHN_0, iVencChn);
     if (ret) {
         ERR_PRT("Do mpp_comm_vi_bind_venc fail! ret:%d \n", ret);
         return -1;
@@ -827,7 +1026,7 @@ static int components_unbind(void)
     int ret = 0;
 
     /****** UnBind video mode ******/
-    ret = mpp_comm_vi_unbind_venc(VI_DEV_0, VI_CHN_0, VENC_CHN_0);
+    ret = mpp_comm_vi_unbind_venc(VI_DEV_0, VI_CHN_0, iVencChn);
     if (ret) {
         ERR_PRT("Do mpp_comm_vi_unbind_venc fail! ret:%d\n", ret);
     }
@@ -897,7 +1096,7 @@ static int components_start(void)
     }
 #endif	
 
-    ret = AW_MPI_VENC_StartRecvPic(VENC_CHN_0);
+    ret = AW_MPI_VENC_StartRecvPic(iVencChn);
     if (ret) {
         ERR_PRT("Do AW_MPI_VENC_StartRecvPic fail! ret:%d\n", ret);
         return -1;
@@ -938,7 +1137,7 @@ static int components_start(void)
 #endif
 
 #ifdef AI_ENABLE
-    ret = AW_MPI_AI_EnableChn(AI_DEV_0, AI_CHN_0);
+    ret = AW_MPI_AI_EnableChn(iAiDev, AI_CHN_0);
     if (ret) {
         ERR_PRT("Do AW_MPI_AI_EnableChn fail! ret:%d\n", ret);
         return -1;
@@ -982,9 +1181,9 @@ static int components_stop(void)
 #endif
 #endif
 
-    ret = AW_MPI_VENC_StopRecvPic(VENC_CHN_0);
+    ret = AW_MPI_VENC_StopRecvPic(iVencChn);
     if (ret) {
-        ERR_PRT("Do AW_MPI_VENC_StopRecvPic fail! ret:%d  venc_chn:%d \n", ret, VENC_CHN_0);
+        ERR_PRT("Do AW_MPI_VENC_StopRecvPic fail! ret:%d  venc_chn:%d \n", ret, iVencChn);
     }
 
 #if 0	
@@ -996,7 +1195,7 @@ static int components_stop(void)
 
     ret = AW_MPI_VI_DisableVirChn(VI_DEV_0, VI_CHN_0);
     if (ret) {
-        ERR_PRT("Do AW_MPI_VI_DisableVirChn fail! ret:%d  venc_chn:%d \n", ret, VENC_CHN_0);
+        ERR_PRT("Do AW_MPI_VI_DisableVirChn fail! ret:%d  venc_chn:%d \n", ret, iVencChn);
     }
 
 #if 0	
@@ -1023,7 +1222,7 @@ static int components_stop(void)
     }
 #endif	
 
-    ret = AW_MPI_AI_DisableChn(AI_DEV_0, AI_CHN_0);
+    ret = AW_MPI_AI_DisableChn(iAiDev, AI_CHN_0);
     if (ret) {
         ERR_PRT("Do AW_MPI_AI_DisableChn fail! ret:%d\n", ret);
     }
